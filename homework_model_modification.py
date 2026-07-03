@@ -28,6 +28,7 @@ class LogisticRegression(nn.Module):
 
 def train_with_l1_l2_regularization_and_early_stopping(l1_lambda=0, weight_decay=1e-2, epochs=500, patience=100,
                                                        epsilon=1e-3):
+    """Тренирует модель линейной регрессии"""
     # Генерируем данные
     X, y = make_regression_data(n=200)
 
@@ -86,6 +87,7 @@ def train_with_l1_l2_regularization_and_early_stopping(l1_lambda=0, weight_decay
     return model
 
 def make_classification_data(n=100, source='multiclass'):
+    """Генерирует данные для классификации"""
     if source == 'binary':
         X = torch.rand(n, 2)
         w = torch.tensor([2.0, -3.0])
@@ -108,6 +110,7 @@ def make_classification_data(n=100, source='multiclass'):
 
 
 def accuracy(y_pred, y_true, task='binary'):
+    """Вычисяет accuracy"""
     if task == 'binary':
         y_pred_bin = (y_pred > 0.5).float()
         return (y_pred_bin == y_true).float().mean().item()
@@ -165,6 +168,7 @@ def calculate_metrics(y_true, y_pred, y_prob=None, task='binary'):
 
 
 def logistic_regression(task_type='multiclass', epochs=800):
+    """Тренирует модель логистической регрессии"""
     # Генерируем данные
     if task_type == 'binary':
         X, y = make_classification_data(n=200, source='binary')
