@@ -26,22 +26,15 @@ class LogisticRegression(nn.Module):
         return self.linear(x)
 
 
-def train_with_l1_l2_regularization_and_early_stopping(l1_lambda=0, weight_decay=1e-2, epochs=500, patience=100,
+def train_with_l1_l2_regularization_and_early_stopping(dataloader, l1_lambda=0, weight_decay=1e-2, epochs=500, patience=100,
                                                        epsilon=1e-3):
     """Тренирует модель линейной регрессии"""
-    # Генерируем данные
-    X, y = make_regression_data(n=200)
-
-    # Создаём датасет и даталоадер
-    dataset = RegressionDataset(X, y)
-    dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
-    print(f'Размер датасета: {len(dataset)}')
-    print(f'Количество батчей: {len(dataloader)}')
-
+    first_batch = next(iter(dataloader))
+    in_features = first_batch[0].shape[1]
     # Создаём модель, функцию потерь и оптимизатор
-    model = LinearRegression(in_features=1)
+    model = LinearRegression(in_features=in_features)
     criterion = nn.MSELoss()
-    optimizer = optim.SGD(model.parameters(), lr=0.1,
+    optimizer = optim.SGD(model.parameters(), lr=0.01,
                           weight_decay=weight_decay)  # Инициализируем оптимизатор с weight_decay
 
     # Параметры для early stopping
@@ -108,7 +101,6 @@ def make_classification_data(n=100, source='multiclass'):
     else:
         raise ValueError('Unknown source')
 
-
 def accuracy(y_pred, y_true, task='binary'):
     """Вычисяет accuracy"""
     if task == 'binary':
@@ -132,7 +124,7 @@ def calculate_metrics(y_true, y_pred, y_prob=None, task='binary'):
         f1 = f1_score(y_true, y_pred_bin, average='binary', zero_division=0)
 
         if y_prob is not None:
-            y_prob = y_prob.cpu().numpy()
+            y_prob = y_prob.detach().numpy()
             if len(np.unique(y_true)) > 1:
                 roc_auc = roc_auc_score(y_true, y_prob)
             else:
@@ -167,27 +159,19 @@ def calculate_metrics(y_true, y_pred, y_prob=None, task='binary'):
     }
 
 
-def logistic_regression(task_type='multiclass', epochs=800):
+def logistic_regression(dataloader, task_type='multiclass', epochs=800):
     """Тренирует модель логистической регрессии"""
-    # Генерируем данные
-    if task_type == 'binary':
-        X, y = make_classification_data(n=200, source='binary')
-    else:
-        X, y = make_classification_data(n=200)
-
-    # Создаём датасет и даталоадер
-    dataset = ClassificationDataset(X, y)
-    dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
-    print(f'Размер датасета: {len(dataset)}')
+    print(f'Размер датасета: {len(dataloader.dataset)}')
     print(f'Количество батчей: {len(dataloader)}')
     print(f'Тип задачи: {task_type}')
-
+    first_batch = next(iter(dataloader))
+    in_features = first_batch[0].shape[1]
     # Создаём модель, функцию потерь и оптимизатор
     if task_type == 'binary':
-        model = LogisticRegression(in_features=2, num_classes=1)
+        model = LogisticRegression(in_features=in_features, num_classes=1)
         criterion = nn.BCEWithLogitsLoss()
     else:
-        model = LogisticRegression(in_features=2, num_classes=3)
+        model = LogisticRegression(in_features=in_features, num_classes=3)
         criterion = nn.CrossEntropyLoss()
 
     optimizer = optim.SGD(model.parameters(), lr=0.1)
@@ -241,6 +225,13 @@ def logistic_regression(task_type='multiclass', epochs=800):
 
 
 if __name__ == "__main__":
-    model = logistic_regression()
+    X, y = make_classification_data(n=200, source='multiclass')
+
+    # Создаём датасет и даталоадер
+    dataset = ClassificationDataset(X, y)
+    dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
+
+    # Вызываем функцию
+    model = logistic_regression(dataloader, task_type='multiclass', epochs=500)
     print(model.state_dict()['linear.weight'])
     print(model.state_dict()['linear.bias'])
